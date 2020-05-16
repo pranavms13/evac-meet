@@ -1,0 +1,21 @@
+html, body {
+  	height: 100%;
+}
+body {
+	margin: 0;
+	text-align: center;
+	background-color: '#FFFFFF';/*whitesmoke;*/
+}
+
+.container2 {
+	padding-top: 50px;
+	margin: auto;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+}
+
+.bombat{
+	background-image: linear-gradient(to right, #00eb81, #00b19c);
+	color:#ffffff;
+  }
