@@ -10,6 +10,9 @@ import "./Home.css"
 class Login extends Component {
 	constructor(props){
         super(props);
+        this.state = {
+            failed : false
+        }
         this.successlogin = this.successlogin.bind(this);
         this.faillogin = this.faillogin.bind(this);
         // this.logout = this.logout.bind(this);
@@ -42,8 +45,7 @@ class Login extends Component {
         // window.location.reload();
     }
     faillogin(e){
-        alert("Login Failed")
-        console.log("Fail login")
+        this.setState({failed:true});
     }
 
 
@@ -51,12 +53,12 @@ class Login extends Component {
 		return (
 			<div className="container2">
 				<div>
-					<h1 style={{ fontSize: "45px" }}>Video Meeting</h1>
-					<p style={{ fontWeight: "200" }}>Video conference website that lets you stay in touch with all your friends.</p>
+                    <h1 style={{ fontSize: "45px" }}>EVAC Video Meeting</h1>
+                    <p style={{ fontWeight: "200" }}>EVAC is a WebRTC JavaScript based peer-to-peer application with features like screen sharing, audio/video conferencing, file sharing, media streaming etc.</p>
 				</div>
 
-				<div style={{
-					background: "white", width: "30%", height: "auto", padding: "20px", minWidth: "400px",
+				<div className="bombat" style={{
+					width: "30%", height: "auto", padding: "20px", minWidth: "400px",
 					textAlign: "center", margin: "auto", marginTop: "100px"
 				}}>
 					<p style={{ margin: 0, fontWeight: "bold", width:'100%',textAlign:'center' }}>Login</p><hr/>
@@ -69,6 +71,7 @@ class Login extends Component {
                             cookiePolicy={'single_host_origin'}
                         />
                     </p>
+                    {this.state.failed && <p style={{color:'red'}}> Login Failed !</p>}
 				</div>
 			</div>
 		)

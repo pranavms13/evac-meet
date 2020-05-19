@@ -90,7 +90,6 @@ class Video extends Component {
 			this.setState({username:cookie.load('EVAC').email,fullName:cookie.load('EVAC').name}, () => {
 				// this.getPermissions()
 				this.getMedia()
-				window.localStream = this.generateNameStream(cookie.load('EVAC').name)
 				this.connectToSocketServer()
 			})
 		}
@@ -134,21 +133,32 @@ class Video extends Component {
 		let canvas = document.createElement("canvas");
 		canvas.width = 640;
 		canvas.height = 480;
+		canvas.style.backgroundColor = '#ffffff'
 		var c = canvas.getContext('2d');
-		c.fillStyle = "#ffffff";
-		c.font = "30px Arial";
+		// c.fillStyle = '#ffffff';
+
+		var gradient = c.createLinearGradient(0, 0, canvas.width, 0);
+		gradient.addColorStop("0",'#00eb81');
+		gradient.addColorStop("1", '#00b19c');		
+		// Fill with gradient
+		c.fillStyle = gradient;
+		// c.fillText("Big smile!", 10, 90);
+		// c.fillStyle = "#ffffff";
+		c.font = "50px Arial";
 		c.textAlign = "center";
 		c.fillText(name,canvas.width/2,canvas.height/2);
 		return(canvas.captureStream())
 	}
 
 	getMedia = async () => {
+		//-------------------------------------------------------------------------------------------------------------------------------
 		try{
 			var tracks = window.localStream.getTracks()
 			tracks.forEach(function(track) {
 				track.stop();
 			  });
 		}catch(e){console.log(e)}
+		var s = new MediaStream();
 
 		console.log(this.state.video, this.state.audio, this.state.screen);
 		if(!this.state.video && !this.state.audio && !this.state.screen){
@@ -193,6 +203,9 @@ class Video extends Component {
 			var cam = await navigator.mediaDevices.getUserMedia({ video: true , audio: { echoCancellation:true }});
 			this.getMediaSuccess(cam)
 		}
+
+		//-------------------------------------------------------------------------------------------------------------------------------
+
 		// else if(this.state.video && this.state.screen && this.videoAvailable && this.state.screenAvailable){
 		// 	var cam = await navigator.mediaDevices.getUserMedia({ video: true , audio: true});
 		// 	var screen = await navigator.mediaDevices.getDisplayMedia({ video:this.state.screen, audio: this.state.screen});
@@ -257,9 +270,10 @@ class Video extends Component {
 		window.localStream = stream
 		this.localVideoref.current.srcObject = stream
 
-		if(window.localStream.getVideoTracks().length===0){
-			await window.localStream.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
-		}
+		// if(window.localStream.getVideoTracks().length===0){
+		// 	await window.localStream.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
+		// }
+
 		for (let id in connections) {
 			if (id === socketId) continue
 
@@ -338,7 +352,10 @@ class Video extends Component {
 								var minHeight = '40%';
 								var height = String(100 / elms) + '%';
 								var width;
-								if(elms <= 2){
+								if(elms <= 1){
+									width = '75%'
+									height = '100%'
+								}else if(elms <= 2){
 									width = '45%';
 									height = '75%';
 								}else if(elms <= 4){
@@ -438,6 +455,8 @@ class Video extends Component {
 				}
 			});
 
+			socket.on('chat-message', this.addMessage)
+
 			socket.on('participation-request', function(path,id,extra){
 				confirm({
 					title: `Add ${extra.name} to the meeting ?`,
@@ -457,6 +476,18 @@ class Video extends Component {
 					},
 				  });
 			})
+
+			socket.on('rejected', () => {
+				message.error('Host rejected you to join the meeting',5,() => {
+					window.location.href='/';
+				});
+			})
+
+			socket.on('banned', () => {
+				message.error('You are banned from joining this meeting',5,() => {
+					window.location.href = '/'
+				})
+			})
 		});
 	}
 	handleVideo = () => {
@@ -465,6 +496,7 @@ class Video extends Component {
 		}, () => {
 			this.getMedia()
 		})
+		this.state.video ? message.error('Video is Off') : message.success('Video is On')
 	}
 
 	handleAudio = () => {
@@ -473,7 +505,7 @@ class Video extends Component {
 		}, () => {
 			this.getMedia()
 		})
-		this.state.audio ? message.info('Microphone is muted') : message.info('Microphone is unmuted')
+		this.state.audio ? message.error('Microphone is muted') : message.success('Microphone is unmuted')
 	}
 
 	handleScreen = () => {
@@ -570,18 +602,19 @@ class Video extends Component {
 			>
 				<div>
 					<div>
-						<div className="btn-down bombat" style={{ height:'65px',paddingTop:'8px', textAlign: "center" }}>
+						<div className="btn-down bombat" style={{ height:'65px',maxHeight:'65px', paddingTop:'8px', textAlign: "center" }}>
 							<IconButton style={{ color: "#424242" }} onClick={this.handleVideo}>
-								{(this.state.video === true) ? <VideocamIcon /> : <VideocamOffIcon />}
-							</IconButton>
-
-							<IconButton style={{ color: "#f44336" }} onClick={this.handleEndCall}>
-								<CallEndIcon />
+								{(this.state.video === true) ? <VideocamIcon /> : <VideocamOffIcon style={{ color: "#f44336" }}/>}
 							</IconButton>
 
 							<IconButton style={{ color: "#424242" }} onClick={this.handleAudio}>
 								{this.state.audio === true ? <MicIcon /> : <MicOffIcon style={{ color: "#f44336" }}/>}
 							</IconButton>
+							
+							<IconButton style={{ paddingLeft:'5%',paddingRight:'5%', color: "#f44336" }} onClick={this.handleEndCall}>
+								<CallEndIcon />
+							</IconButton>
+							
 
 							{this.state.screenAvailable === true ?
 								<IconButton style={{ color: "#424242" }} onClick={this.handleScreen}>
