@@ -32,7 +32,7 @@ import "./Video.css";
 const { confirm } = Cmod;
 var VideoStreamMerger = require('video-stream-merger')
 
-const server_url = 'http://localhost:4001' //'https://evac-signal.herokuapp.com'
+const server_url = 'https://evac-signal.herokuapp.com' //'http://localhost:4001' 
 
 var connections = {}
 const peerConnectionConfig = {
