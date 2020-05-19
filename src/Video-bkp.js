@@ -16,9 +16,7 @@ import ChatIcon from '@material-ui/icons/Chat';
 
 import LoadingOverlay from 'react-loading-overlay';
 
-import { Modal as Cmod, message } from 'antd';
-import { ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
-
+import { message } from 'antd';
 import 'antd/dist/antd.css';
 
 import cookie from 'react-cookies';
@@ -28,9 +26,6 @@ import { Row } from 'reactstrap';
 import Modal from 'react-bootstrap/Modal'
 import 'bootstrap/dist/css/bootstrap.css';
 import "./Video.css";
-
-const { confirm } = Cmod;
-var VideoStreamMerger = require('video-stream-merger')
 
 const server_url = 'http://localhost:4001' //'https://evac-signal.herokuapp.com'
 
@@ -88,15 +83,9 @@ class Video extends Component {
 			}
 		}else{
 			this.setState({username:cookie.load('EVAC').email,fullName:cookie.load('EVAC').name}, () => {
-				// this.getPermissions()
 				this.getMedia()
-				window.localStream = this.generateNameStream(cookie.load('EVAC').name)
-				this.connectToSocketServer()
 			})
 		}
-		document.getElementById('my-video').addEventListener("ended", () => {
-			this.setState({video:false,audio:false,screen:false})
-		});
     }
 	getPermissions = async () => {
 		await navigator.mediaDevices.getUserMedia({ video: true })
@@ -128,9 +117,22 @@ class Video extends Component {
 				screenAvailable: false,
 			})
 		}
+
+		if (this.videoAvailable || this.audioAvailable) {
+			navigator.mediaDevices.getUserMedia({ video: this.videoAvailable, audio: this.audioAvailable })
+				.then((stream) => {
+					stream.removeTrack(stream.getVideoTracks()[0])
+					stream.addTrack(this.generateNametrack(cookie.load('EVAC').name))
+					stream.removeTrack(stream.getAudioTracks()[0])
+					window.localStream = stream
+					this.localVideoref.current.srcObject = stream
+				})
+				.then((stream) => {})
+				.catch((e) => console.log(e))
+		}
 	}
 
-	generateNameStream = (name) => {
+	generateNametrack = (name) => {
 		let canvas = document.createElement("canvas");
 		canvas.width = 640;
 		canvas.height = 480;
@@ -139,127 +141,52 @@ class Video extends Component {
 		c.font = "30px Arial";
 		c.textAlign = "center";
 		c.fillText(name,canvas.width/2,canvas.height/2);
-		return(canvas.captureStream())
+		return(canvas.captureStream().getVideoTracks()[0])
 	}
 
-	getMedia = async () => {
-		try{
-			var tracks = window.localStream.getTracks()
-			tracks.forEach(function(track) {
-				track.stop();
-			  });
-		}catch(e){console.log(e)}
+	getMedia = () => {
+		this.setState({
+			video: this.videoAvailable,
+		// 	audio: this.audio,
+		// 	screen: this.screen
+		}, () => {
+			this.getUserMedia()
+			this.connectToSocketServer()
+		})
+	}
 
-		console.log(this.state.video, this.state.audio, this.state.screen);
-		if(!this.state.video && !this.state.audio && !this.state.screen){
-			this.getMediaSuccess(this.generateNameStream(this.state.fullName))
-		}else if(!this.state.video && !this.state.audio && this.state.screen && this.state.screenAvailable){
-			var screen = await navigator.mediaDevices.getDisplayMedia({ video:this.state.screen, audio: this.state.screen});
-			this.getMediaSuccess(screen)
-		}else if(!this.state.video && this.state.audio && !this.state.screen && this.audioAvailable){
-			var mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true }});
-			await mic.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
-			this.getMediaSuccess(mic)
-		}else if(!this.state.video && this.state.audio && this.state.screen && this.audioAvailable && this.state.screenAvailable){
-			var screen = await navigator.mediaDevices.getDisplayMedia({ video:this.state.screen, audio: this.state.screen});
-			var mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true }});
-			if(screen.getAudioTracks().length>0){
-				screen.removeTrack(screen.getAudioTracks()[0])
+
+	getUserMedia = () => {
+		if ((this.videoAvailable) || (this.audioAvailable)) {
+			// console.log(this.state.video,this.state.audio)
+			navigator.mediaDevices.getUserMedia({ video: this.videoAvailable, audio: this.audioAvailable })
+				.then(this.getUserMediaSuccess)
+				.then((stream) => {})
+				.catch((e) => console.log(e))
+		} else {
+			try {
+				let tracks = this.localVideoref.current.srcObject.getTracks()
+				tracks.forEach(track => track.stop())
+			} catch (e) {
+				
 			}
-			screen.addTrack(mic.getAudioTracks()[0])
-			this.getMediaSuccess(screen)
-		}else if(this.state.video && !this.state.audio && !this.state.screen && this.videoAvailable){
-			var cam = await navigator.mediaDevices.getUserMedia({ video: true });
-			this.getMediaSuccess(cam)
-		}else if(this.state.video && this.state.screen && this.videoAvailable && this.state.screenAvailable){
-			var cam = await navigator.mediaDevices.getUserMedia({ video: true , audio: true});
-			var screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true});
-			var merger = new VideoStreamMerger();
-			merger.addStream(screen, {
-				x:0,y:0,
-				width:merger.width,
-				height:merger.height,
-				mute:true // Neglet audio from screen
-			})
-			merger.addStream(cam, {
-				x:merger.width - 125, y:merger.height - 125,
-				width:100,height:100,
-				mute : (this.state.audio && this.audioAvailable)
-			})
-			merger.start()
-			this.getMediaSuccess(merger.result)
-
-		}else if(this.state.video && this.state.audio && !this.state.screen && this.videoAvailable && this.audioAvailable){
-			var cam = await navigator.mediaDevices.getUserMedia({ video: true , audio: { echoCancellation:true }});
-			this.getMediaSuccess(cam)
 		}
-		// else if(this.state.video && this.state.screen && this.videoAvailable && this.state.screenAvailable){
-		// 	var cam = await navigator.mediaDevices.getUserMedia({ video: true , audio: true});
-		// 	var screen = await navigator.mediaDevices.getDisplayMedia({ video:this.state.screen, audio: this.state.screen});
-		// 	var merger = new VideoStreamMerger();
-		// 	merger.addStream(screen, {
-		// 		x:0,y:0,
-		// 		width:merger.width,
-		// 		height:merger.height,
-		// 		mute:true // Neglet audio from screen
-		// 	})
-		// 	merger.addStream(cam, {
-		// 		x:merger.width - 125, y:merger.height - 125,
-		// 		width:100,height:100,
-		// 		mute : this.state.audio
-		// 	})
-		// 	merger.start()
-		// 	stream = merger.result
-		// }
-
-		// else if(this.state.video && this.state.audio &&!this.state.screen && this.videoAvailable && this.audioAvailable){
-		// 	var cam = await navigator.mediaDevices.getUserMedia({ video: true , audio: true })
-		// 	stream = cam;
-		// }else if(this.state.video && !this.state.audio &&!this.state.screen && this.videoAvailable){
-		// 	var cam = await navigator.mediaDevices.getUserMedia({ video: true , audio: false})
-		// 	stream = cam;
-		// }else if(!this.state.video && !this.state.audio &&!this.state.screen){
-		// 	stream = this.generateNameStream(this.state.fullName)
-		// }else if(!this.state.video && this.state.audio &&!this.state.screen && this.audioAvailable){
-		// 	var mic = await navigator.mediaDevices.getUserMedia({ audio: true })
-		// 	mic.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
-		// 	stream = mic
-		// }else if(!this.state.video && this.state.screen && this.state.screenAvailable){
-		// 	var screen = await navigator.mediaDevices.getDisplayMedia({ video:this.state.screen, audio: this.state.screen});
-		// 	stream = screen
-		// }
-		// if(stream.getVideoTracks().length===0){
-		// 	stream.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
-		// }
-		// this.getMediaSuccess(stream)
 	}
-	
-	// getAudioMedia = async () => {
-	// 	if(this.state.audio && this.audioAvailable){
-	// 		var mic = await navigator.mediaDevices.getUserMedia({ audio: {echoCancellation: true,noiseSuppression: true } })
-	// 		window.localStream.addTrack(mic.getAudioTracks()[0])
-	// 	}else if(window.localStream.getAudioTracks().length>0){
-	// 		window.localStream.removeTrack(window.localStream.getAudioTracks()[0])
-	// 	}
-	// 	// if(window.localStream.getVideoTracks().length===0){
-	// 	// 	window.localStream.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
-	// 	// }
-	// 	this.getMediaSuccess(window.localStream)
-	// }
 
+	getUserMediaSuccess = (stream) => {
+		// console.log(stream)
 
-	getMediaSuccess = async (stream) => {
-		// try {
-		// 	window.localStream.getTracks().forEach(track => track.stop())
-		// } catch (e) {
-		// 	console.log(e)
-		// }
+		if(!this.state.video){
+			stream.removeTrack(stream.getVideoTracks()[0])
+			stream.addTrack(this.generateNametrack(this.state.fullName))
+		}
+		if(!this.state.audio){
+			stream.removeTrack(stream.getAudioTracks()[0])
+		}
+
 		window.localStream = stream
 		this.localVideoref.current.srcObject = stream
 
-		if(window.localStream.getVideoTracks().length===0){
-			await window.localStream.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
-		}
 		for (let id in connections) {
 			if (id === socketId) continue
 
@@ -273,7 +200,164 @@ class Video extends Component {
 					.catch(e => console.log(e));
 			});
 		}
+
+		// stream.getVideoTracks()[0].onended = () => {
+		// 	this.setState({
+		// 		video: false,
+		// 		audio: false,
+		// 	}, () => {
+		// 		try {
+		// 			let tracks = this.localVideoref.current.srcObject.getTracks()
+		// 			tracks.forEach(track => track.stop())
+		// 		} catch (e) {
+		// 			console.log(e)
+		// 		}
+
+		// 		let silence = () => {
+		// 			let ctx = new AudioContext()
+		// 			let oscillator = ctx.createOscillator()
+		// 			let dst = oscillator.connect(ctx.createMediaStreamDestination())
+		// 			oscillator.start()
+		// 			ctx.resume()
+		// 			return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false });
+		// 		}
+
+		// 		let black = ({ width = 640, height = 480 } = {}) => {
+		// 			let canvas = Object.assign(document.createElement("canvas"), { width, height });
+		// 			canvas.getContext('2d').fillRect(0, 0, width, height);
+		// 			let stream = canvas.captureStream();
+		// 			return Object.assign(stream.getVideoTracks()[0], { enabled: false });
+		// 		}
+
+		// 		let blackSilence = (...args) => new MediaStream([black(...args), silence()]);
+
+		// 		window.localStream = blackSilence()
+		// 		this.localVideoref.current.srcObject = window.localStream
+
+		// 		for (let id in connections) {
+		// 			// connections[id].addStream(window.localStream);
+		// 			connections[id].addStream(blackSilence())
+
+		// 			connections[id].createOffer().then((description) => {
+		// 				connections[id].setLocalDescription(description)
+		// 					.then(() => {
+		// 						socket.emit('signal', id, JSON.stringify({ 'sdp': connections[id].localDescription }));
+		// 					})
+		// 					.catch(e => console.log(e));
+		// 			});
+		// 		}
+		// 	})
+		// };
+
 	}
+
+
+	getDislayMedia = () => {
+		if (this.state.screen) {
+			if (navigator.mediaDevices.getDisplayMedia) {
+				navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+					.then(this.getDislayMediaSuccess)
+					.then((stream) => {})
+					.catch((e) => console.log(e))
+			}
+		}
+	}
+
+	addMicSpeprate = () => {
+		if ((this.audioAvailable)) {
+			// console.log(this.state.video,this.state.audio)
+			navigator.mediaDevices.getUserMedia({ audio: this.audioAvailable })
+				.then(this.getUserMediaSuccess)
+				.then((stream) => {
+					return stream.getAudioTracks()[0];
+				})
+				.catch((e) => console.log(e))
+		}
+	}
+
+	getDislayMediaSuccess = (stream) => {
+		if(!this.state.screen){
+			stream.removeTrack(stream.getVideoTracks()[0])
+			stream.addTrack(this.generateNametrack(this.state.fullName))
+		}
+		if(!this.state.audio){
+			stream.removeTrack(stream.getAudioTracks()[0])
+		}else{
+			stream.addTrack(this.addMicSpeprate());
+		}
+
+		// try {
+		// 	window.localStream.getTracks().forEach(track => track.stop())
+		// } catch (e) {
+		// 	console.log(e)
+		// }
+
+		window.localStream = stream
+		this.localVideoref.current.srcObject = stream
+
+		for (let id in connections) {
+			if (id === socketId) continue
+
+			connections[id].addStream(window.localStream);
+
+			connections[id].createOffer().then((description) => {
+				connections[id].setLocalDescription(description)
+					.then(() => {
+						socket.emit('signal', id, JSON.stringify({ 'sdp': connections[id].localDescription }));
+					})
+					.catch(e => console.log(e));
+			});
+		}
+
+
+		// stream.getVideoTracks()[0].onended = () => {
+		// 	this.setState({
+		// 		screen: false,
+		// 	}, () => {
+		// 		try {
+		// 			let tracks = this.localVideoref.current.srcObject.getTracks()
+		// 			tracks.forEach(track => track.stop())
+		// 		} catch (e) {
+		// 			console.log(e)
+		// 		}
+
+		// 		let silence = () => {
+		// 			let ctx = new AudioContext()
+		// 			let oscillator = ctx.createOscillator()
+		// 			let dst = oscillator.connect(ctx.createMediaStreamDestination())
+		// 			oscillator.start()
+		// 			ctx.resume()
+		// 			return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false });
+		// 		}
+
+		// 		// let black = ({ width = 640, height = 480 } = {}) => {
+		// 		// 	let canvas = Object.assign(document.createElement("canvas"), { width, height });
+		// 		// 	canvas.getContext('2d').fillRect(0, 0, width, height);
+		// 		// 	let stream = canvas.captureStream();
+		// 		// 	return Object.assign(stream.getVideoTracks()[0], { enabled: false });
+		// 		// }
+
+		// 		let canvas = document.createElement("canvas");
+		// 		canvas.width = 640
+		// 		canvas.height = 480
+		// 		var c = canvas.getContext('2d');
+		// 		c.fillStyle = "#ffffff";
+		// 		c.font = "30px Arial";
+		// 		c.textAlign = "center";
+		// 		c.fillText("hi",canvas.width/2,canvas.height/2);
+
+		// 		// stream.removeTrack(stream.getVideoTracks()[0])
+		// 		// stream.addTrack(canvas.captureStream().getVideoTracks()[0])
+		// 		// stream.getVideoTracks()[0] = canvas.captureStream()
+		// 		// let blackSilence = (...args) => new MediaStream([black(...args), silence()]);
+		// 		window.localStream = canvas.captureStream();//blackSilence()
+		// 		this.localVideoref.current.srcObject = canvas.captureStream();
+
+		// 		this.getUserMedia()
+		// 	})
+		// };
+	}
+
 
 	gotMessageFromServer = (fromId, message) => {
 		var signal = JSON.parse(message)
@@ -299,58 +383,72 @@ class Video extends Component {
 
 	connectToSocketServer = () => {
 		socket = io.connect(server_url, { secure: true })
+
 		socket.on('signal', this.gotMessageFromServer)
+
 		socket.on('connect', () => {
-			console.log('Connected to Server');
+
+			console.log("connected")
+			console.log(window.location.href)
 			socket.emit('join-call', window.location.href, {name:this.state.fullName,email:this.state.username})
 			socketId = socket.id
+
+			socket.on('chat-message', this.addMessage)
 
 			socket.on('waiting', () => {this.setState({waiting:true})})
 			socket.on('join-success', () => {this.setState({waiting:false})})
 
-			socket.on('user-joined', (id, clients) => {
-				console.log("User Joined")
-				clients.forEach(client => {
-					connections[client] = undefined;
-					if(connections[client] === undefined){
-						connections[client] = new RTCPeerConnection(peerConnectionConfig);
-						connections[client].onicecandidate = (event) => {
-							if(event.candidate != null){
-								socket.emit('signal', client, JSON.stringify({ 'ice': event.candidate }));
+			socket.on('user-joined', (id, clients, uextra) => {
+				console.log("joined")
+
+				clients.forEach( (socketListId) => {
+					connections[socketListId] = undefined
+					if (connections[socketListId] === undefined) {
+						console.log("new entry")
+						connections[socketListId] = new RTCPeerConnection(peerConnectionConfig);
+						//Wait for their ice candidate       
+						connections[socketListId].onicecandidate = function (event) {
+							if (event.candidate != null) {
+								socket.emit('signal', socketListId, JSON.stringify({ 'ice': event.candidate }));
 							}
 						}
-						connections[client].onaddstream = (event) => {
-							let clientvideo = document.querySelector(`[data-socket="${client}"]`);
-							if(clientvideo !== null){
-								clientvideo.srcObject = event.stream;
-							}else{
+						
+						//Wait for their video stream
+						connections[socketListId].onaddstream = (event) => {
+							console.log(connections[socketListId])
+							// TODO mute button, full screen button
+							var searchVidep = document.querySelector(`[data-socket="${socketListId}"]`);
+							if (searchVidep !== null) { // se non faccio questo check crea un quadrato vuoto inutile
+								searchVidep.srcObject = event.stream
+							} else {
 								elms = clients.length
-								//--------------------------- Video Size Calculation ------------------------
 								var main = document.getElementById('main')
-								var videos = main.querySelectorAll('video');
-								
-								var widthMain = main.offsetWidth;
-								var minWidth = '30%';
-								if((widthMain * 30 / 100) < 300){
-									minWidth = '300px';
+								var videos = main.querySelectorAll("video")
+
+								var widthMain = main.offsetWidth
+
+								var minWidth = "30%"
+								if ((widthMain * 30 / 100) < 300) {
+									minWidth = "300px"
 								}
 
-								var minHeight = '40%';
-								var height = String(100 / elms) + '%';
-								var width;
-								if(elms <= 2){
-									width = '45%';
-									height = '75%';
-								}else if(elms <= 4){
-									width = '35%';
-									height = '50%';
-								}else{
-									width=String(100 / elms) + '%'
-								}
-								//-------------------------------------------------------------------------
+								var minHeight = "40%"
 
-								for(let a = 0;a< videos.length; ++a){
-									videos[a].style.minWidth = minWidth;
+								var height = String(100 / elms) + "%"
+								var width = ""
+								if (elms === 1 || elms === 2) {
+									width = "45%"
+									height = "100%"
+								} else if (elms === 3 || elms === 4) {
+									width = "35%"
+									height = "50%"
+								} else {
+									width = String(100 / elms) + "%"
+								}
+
+
+								for (let a = 0; a < videos.length; ++a) {
+									videos[a].style.minWidth = minWidth
 									videos[a].style.minHeight = minHeight
 									videos[a].style.setProperty("width", width)
 									videos[a].style.setProperty("height", height)
@@ -368,9 +466,8 @@ class Video extends Component {
 								video.style.borderRadius = '10px'
 								video.style.objectFit = "fill"
 
-								video.setAttribute('data-socket', client);
-								video.setAttribute("controls", "controls");
-								video.srcObject = event.stream;
+								video.setAttribute('data-socket', socketListId);
+								video.srcObject = event.stream
 								video.autoplay = true;
 								// video.muted       = true;
 								video.playsinline = true;
@@ -378,10 +475,73 @@ class Video extends Component {
 								main.appendChild(video)
 							}
 						}
-						// if(window.localStream===null || window.localStream===undefined){
-							// connections[client].addStream(this.generateNameStream(this.state.fullName))
-						// }else{
-							connections[client].addStream(window.localStream)
+						
+						// console.log(window.localStream)
+						//Add the local video stream
+
+						if (window.localStream !== undefined && window.localStream !== null) {
+							connections[socketListId].addStream(window.localStream);
+						} else {
+							let canvas = document.createElement("canvas");
+							canvas.width = 640;
+							canvas.height = 480;
+							var c = canvas.getContext('2d');
+							c.fillStyle = "#ffffff";
+							c.font = "30px Arial";
+							c.textAlign = "center";
+							c.fillText(cookie.load('EVAC').name,canvas.width/2,canvas.height/2);
+
+							connections[socketListId].addStream(canvas.captureStream());
+						}
+						// 	console.log(uextra)
+						// 	let stream = new MediaStream([this.generateNametrack(uextra[socketListId][0].name)]);
+						// 	connections[socketListId].addStream(stream)
+						// 	// connections[socketListId]
+						// }
+						// 	let canvas = document.createElement("canvas");
+						// 	canvas.width = 640;
+						// 	canvas.height = 480;
+						// 	var c = canvas.getContext('2d');
+						// 	c.fillStyle = "#ffffff";
+						// 	c.font = "30px Arial";
+						// 	c.textAlign = "center";
+						// 	c.fillText(cookie.load('EVAC').name,canvas.width/2,canvas.height/2);
+							
+						// 	connections[socketListId].addStream(canvas.captureStream());
+						// 	// let silence = () => {
+						// 	// 	let ctx = new AudioContext()
+						// 	// 	let oscillator = ctx.createOscillator()
+						// 	// 	let dst = oscillator.connect(ctx.createMediaStreamDestination())
+						// 	// 	oscillator.start()
+						// 	// 	ctx.resume()
+						// 	// 	return Object.assign(dst.stream.getAudioTracks()[0], { enabled: false });
+						// 	// }
+
+						// 	// let black = ({ width = 640, height = 480 } = {}) => {
+						// 	// 	let canvas = Object.assign(document.createElement("canvas"), { width, height });
+						// 	// 	let c = canvas.getContext('2d')//.fillRect(0, 0, width, height);
+						// 	// 	c.fillStyle = "#ffffff";
+						// 	// 	c.font = "30px Arial";
+						// 	// 	c.textAlign = "center";
+						// 	// 	c.fillText("hi",canvas.width/2,canvas.height/2);
+
+						// 	// 	let stream = canvas.captureStream();
+						// 	// 	return Object.assign(stream.getVideoTracks()[0], { enabled: false });
+						// 	// }
+
+						// 	// let canvas = document.createElement("canvas");
+						// 	// canvas.width = 640
+						// 	// canvas.height = 480
+						// 	// var c = canvas.getContext('2d');
+						// 	// c.fillStyle = "#ffffff";
+						// 	// c.font = "30px Arial";
+						// 	// c.textAlign = "center";
+						// 	// c.fillText("hi",canvas.width/2,canvas.height/2);
+
+						// 	// stream.getVideoTracks()[0] = canvas.captureStream()
+						// 	// let blackSilence = (...args) => new MediaStream([black(...args), silence()]);
+						// 	// window.localStream = canvas.captureStream();//blackSilence()
+						// 	// connections[socketListId].addStream(canvas.captureStream());
 						// }
 					}
 				});
@@ -439,31 +599,34 @@ class Video extends Component {
 			});
 
 			socket.on('participation-request', function(path,id,extra){
-				confirm({
-					title: `Add ${extra.name} to the meeting ?`,
-					icon: <InfoCircleOutlined />,
-					content: `${extra.name}(${extra.email}) is trying to join the Meeting. Click Ok to Add. `,
-					onOk() {
-					  return new Promise((resolve, reject) => {
-						socket.emit('confirm-user',path,id)
-						setTimeout(Math.random() > 0.5 ? resolve : reject, 1000);
-					  }).catch(() => console.log('Oops errors!'));
-					},
-					onCancel() {
-						return new Promise((resolve, reject) => {
-							setTimeout(Math.random() > 0.5 ? resolve : reject, 1000);
-							socket.emit('reject-user',path,id,extra)
-						  }).catch(() => console.log('Oops errors!'));
-					},
-				  });
+				var r = window.confirm(extra.name + ' (' + extra.email + ') is trying to join the meeting.\nClick OK to add the user')
+				if(r){
+					socket.emit('confirm-user',path,id)
+				}else{
+					socket.emit('reject-user',path,id,extra)
+				}
 			})
-		});
+
+			socket.on('rejected', () => {
+				message.error('Host rejected you to join the meeting',5,() => {
+					window.location.href='/';
+				});
+			})
+
+			socket.on('banned', () => {
+				message.error('You are banned from joining this meeting',5,() => {
+					window.location.href = '/'
+				})
+			})
+		})
 	}
+
+
 	handleVideo = () => {
 		this.setState({
-			video: !this.state.video
+			video: !this.state.video,
 		}, () => {
-			this.getMedia()
+			this.getUserMedia()
 		})
 	}
 
@@ -471,7 +634,7 @@ class Video extends Component {
 		this.setState({
 			audio: !this.state.audio,
 		}, () => {
-			this.getMedia()
+			this.getUserMedia()
 		})
 		this.state.audio ? message.info('Microphone is muted') : message.info('Microphone is unmuted')
 	}
@@ -480,7 +643,7 @@ class Video extends Component {
 		this.setState({
 			screen: !this.state.screen
 		}, () => {
-			this.getMedia()
+			this.getDislayMedia()
 		})
 	}
 
@@ -560,6 +723,19 @@ class Video extends Component {
 		})
 	}
 
+	handleUsername = (e) => {
+		this.setState({
+			username: e.target.value
+		})
+	}
+
+	// connect = () => {
+	// 	this.setState({
+	// 		askForUsername: false,
+	// 	}, () => {
+	// 		this.getMedia()
+	// 	})
+	// }
 
 	render() {
 		return (
