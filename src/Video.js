@@ -478,13 +478,13 @@ class Video extends Component {
 			})
 
 			socket.on('rejected', () => {
-				message.error('Host rejected you to join the meeting',5,() => {
+				message.error('Host rejected you to join the meeting',3,() => {
 					window.location.href='/';
 				});
 			})
 
 			socket.on('banned', () => {
-				message.error('You are banned from joining this meeting',5,() => {
+				message.error('You are banned from joining this meeting',3,() => {
 					window.location.href = '/'
 				})
 			})
