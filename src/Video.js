@@ -17,7 +17,9 @@ import ChatIcon from '@material-ui/icons/Chat';
 import LoadingOverlay from 'react-loading-overlay';
 
 import { Modal as Cmod, message } from 'antd';
-import { ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined } from '@ant-design/icons';
+
+import {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, Msg, SendMsg, EndCall} from './scripts/buttons';
 
 import 'antd/dist/antd.css';
 
@@ -34,6 +36,10 @@ var VideoStreamMerger = require('video-stream-merger')
 
 const server_url = 'https://evac-signal.herokuapp.com' //'http://localhost:4001' 
 
+var joinbling = require('./sounds/join_call_mp3.mp3')
+var notifybling = require('./sounds/notify_mp3.mp3')
+var leavebling = require('./sounds/leave_call_mp3.mp3')
+
 var connections = {}
 const peerConnectionConfig = {
 	'iceServers': [
@@ -41,8 +47,7 @@ const peerConnectionConfig = {
 		{ 'urls' : 'turn:turn.pranavms.ml:3480' ,'username':'pranavms', 'credential':'pranavms@13'},
 		{ 'urls': 'stun:stun1.l.google.com:19302' },
 		{ 'urls' : 'turn:turn.pranavms.ml:3481' ,'username':'pranavms', 'credential':'pranavms@13'},
-		// { 'urls': 'stun:stun.services.mozilla.com' },
-		
+		// { 'urls': 'stun:stun.services.mozilla.com' },	
 	]
 }
 var socket = null
@@ -324,9 +329,15 @@ class Video extends Component {
 			socketId = socket.id
 
 			socket.on('waiting', () => {this.setState({waiting:true})})
-			socket.on('join-success', () => {this.setState({waiting:false})})
+			socket.on('join-success', () => {
+				var audio = new Audio(joinbling);
+				audio.play()
+				this.setState({waiting:false})
+			})
 
 			socket.on('user-joined', (id, clients) => {
+				var audio = new Audio(joinbling);
+				audio.play();
 				console.log("User Joined")
 				clients.forEach(client => {
 					connections[client] = undefined;
@@ -420,6 +431,8 @@ class Video extends Component {
 			});
 
 			socket.on('user-left', function (id) {
+				var audio = new Audio(leavebling);
+				audio.play()
 				var video = document.querySelector(`[data-socket="${id}"]`);
 				if (video !== null) {
 					elms--
@@ -557,6 +570,8 @@ class Video extends Component {
 		}))
 
 		if (sender !== socketId) {
+			var audio = new Audio(notifybling)
+			audio.play()
 			this.setState({
 				newmessages: this.state.newmessages + 1
 			})
@@ -565,10 +580,16 @@ class Video extends Component {
 	}
 
 	sendMessage = () => {
-		socket.emit('chat-message', {sender:this.state.fullName,msg:this.state.message})
-		this.setState({
-			message: "",
-		})
+		if(this.state.message===""){
+			this.setState({showModal: false},
+				message.error("Cannot Send Empty Message",5)
+			)
+		}else{
+			socket.emit('chat-message', {sender:this.state.fullName,msg:this.state.message})
+			this.setState({
+				message: "",
+			})
+		}
 	}
 
 	copyUrl = (e) => {
@@ -606,30 +627,18 @@ class Video extends Component {
 			>
 				<div>
 					<div>
-						<div className="btn-down bombat" style={{ height:'65px',maxHeight:'65px', paddingTop:'8px', textAlign: "center" }}>
-							<IconButton style={{ color: "#424242" }} onClick={this.handleVideo}>
-								{(this.state.video === true) ? <VideocamIcon /> : <VideocamOffIcon style={{ color: "#f44336" }}/>}
-							</IconButton>
+						<div className="btn-down bombat" style={{ height:'70px',maxHeight:'70px', paddingTop:'3px', textAlign: "center" }}>
 
-							<IconButton style={{ color: "#424242" }} onClick={this.handleAudio}>
-								{this.state.audio === true ? <MicIcon /> : <MicOffIcon style={{ color: "#f44336" }}/>}
-							</IconButton>
+							{this.state.video ? <UnmutedVideo margin='5px' onClick={this.handleVideo}/>:<MutedVideo margin='5px' onClick={this.handleVideo}/>}
+							{this.state.audio ?<UnmutedMic margin='5px' onClick={this.handleAudio}/> : <MutedMic margin='5px' onClick={this.handleAudio}/>}
 							
-							<IconButton style={{ paddingLeft:'5%',paddingRight:'5%', color: "#f44336" }} onClick={this.handleEndCall}>
-								<CallEndIcon />
-							</IconButton>
+							<span style={{marginLeft:'3%', marginRight:'3%'}}><EndCall margin='5px' onClick={this.handleEndCall}/></span>
 							
-
-							{this.state.screenAvailable === true ?
-								<IconButton style={{ color: "#424242" }} onClick={this.handleScreen}>
-									{this.state.screen === true ? <ScreenShareIcon /> : <StopScreenShareIcon />}
-								</IconButton>
-								: null}
-
-							<Badge badgeContent={this.state.newmessages} max={999} color="secondary" onClick={this.openChat}>
-								<IconButton style={{ color: "#424242" }} onClick={this.openChat}>
-									<ChatIcon />
-								</IconButton>
+							{this.state.screenAvailable && this.state.screen && <Screen margin='5px' onClick={this.handleScreen}/>}
+							{this.state.screenAvailable && !this.state.screen && <Unscreen margin='5px' onClick={this.handleScreen}/>}
+							
+							<Badge color="secondary" badgeContent={this.state.newmessages} max={999} anchorOrigin={{vertical: 'top',horizontal: 'right'}} onClick={this.openChat}>
+								<Msg margin='5px' onClick={this.openChat}/>
 							</Badge>
 						</div>
 
@@ -646,7 +655,8 @@ class Video extends Component {
 							</Modal.Body>
 							<Modal.Footer className="div-send-msg">
 								<Input placeholder="Message" value={this.state.message} onChange={e => this.handleMessage(e)} />
-								<Button variant="contained" color="primary" onClick={this.sendMessage}>Send</Button>
+								<SendMsg margin='5px' onClick={this.sendMessage}/>
+								{/*<Button variant="contained" color="primary" onClick={this.sendMessage}>Send</Button>*/}
 							</Modal.Footer>
 						</Modal>
 

@@ -1,0 +1,25 @@
+.controlbtns {
+    white-space: nowrap;
+    transition-duration: .5s;
+    transition-property: transform;
+    padding: 0;
+    /* font: 12px/1.5 CiscoSans,Arial,Helvetica,sans-serif; */
+    font-weight: 300;
+    font-size: 100%;
+    background: 0 0;
+    background-clip: padding-box;
+    text-align: center;
+    border: none;
+    outline: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    box-sizing: border-box;
+    margin: 0 0;
+    cursor: pointer;
+    position: relative;
+    color: #fff;
+    /* background-color: #f5483f; */
+    /* background-image: linear-gradient(90deg,#00eb81,#00b19c); */
+    display: inline;
+}
