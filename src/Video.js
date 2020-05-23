@@ -4,13 +4,14 @@ import faker from "faker";
 
 import Badge from '@material-ui/core/Badge';
 import { Input, Button } from '@material-ui/core';
+import { makeStyles } from "@material-ui/core/styles";
 
 import LoadingOverlay from 'react-loading-overlay';
 
 import { Modal as Cmod, message } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 
-import {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, Msg, SendMsg, EndCall, CCbtn} from './scripts/buttons';
+import {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, Msg, SendMsg, EndCall, CCbtn, UpArrow, WhatsappBtn} from './scripts/buttons';
 
 import 'antd/dist/antd.css';
 
@@ -27,7 +28,7 @@ import "./Video.css";
 const { confirm } = Cmod;
 var VideoStreamMerger = require('video-stream-merger')
 
-const server_url = 'http://localhost:4001'  //'https://evac-signal.herokuapp.com' //'http://localhost:4001' 
+const server_url = 'https://evac-signal.herokuapp.com' //'http://localhost:4001' 
 
 var joinbling = require('./sounds/join_call_mp3.mp3')
 var notifybling = require('./sounds/notify_mp3.mp3')
@@ -48,6 +49,13 @@ var socketId = null
 
 var elms = 0
 
+const useStyles = makeStyles(theme => ({
+	typography: {
+		padding: theme.spacing(2)
+	}
+}));
+
+
 class Video extends Component {
 	constructor(props) {
 		super(props)
@@ -65,7 +73,8 @@ class Video extends Component {
 			video: false,
 			audio: false,
 			screen: false,
-			showModal: false,
+			showChat: false,
+			showMeet: false,
 			screenAvailable: false,
 			messages: [],
 			message: "",
@@ -554,11 +563,17 @@ class Video extends Component {
 		this.setState({
 			captionsison:!this.state.captionsison
 		})
-		this.captions.toggleListen()
+		if('webkitSpeechRecognition' in window){
+			this.captions.toggleListen()
+		}else{
+			message.error('Closed Captions not Supported on ' + window.navigator.appName)
+		}
 	}
-	openChat = () => {this.setState({showModal: true,newmessages: 0,})}
+	openChat = () => {this.setState({showChat: true,newmessages: 0,})}
+	openMeet = () => {this.setState({showMeet: true})}
 
-	closeChat = () => {this.setState({showModal: false,})}
+	closeChat = () => {this.setState({showChat: false,})}
+	closeMeet = () => {this.setState({showMeet: false,})}
 
 	handleMessage = (e) => {
 		this.setState({
@@ -583,7 +598,7 @@ class Video extends Component {
 
 	sendMessage = () => {
 		if(this.state.message===""){
-			this.setState({showModal: false},
+			this.setState({showChat: false},
 				message.error("Cannot Send Empty Message",5)
 			)
 		}else{
@@ -641,7 +656,7 @@ class Video extends Component {
 							</div>
 						*/}
 						<div className="btn-down bombat" style={{ height:'70px',maxHeight:'70px', paddingTop:'3px', textAlign: "center" }}>
-
+							<UpArrow margin='5px' onClick={this.openMeet}/>
 							{this.state.video ? <UnmutedVideo margin='5px' onClick={this.handleVideo}/>:<MutedVideo margin='5px' onClick={this.handleVideo}/>}
 							{this.state.audio ?<UnmutedMic margin='5px' onClick={this.handleAudio}/> : <MutedMic margin='5px' onClick={this.handleAudio}/>}
 							
@@ -656,7 +671,7 @@ class Video extends Component {
 							<CCbtn margin='5px'onClick={this.handlecc}/>
 						</div>
 
-						<Modal show={this.state.showModal} onHide={this.closeChat} style={{ zIndex: "999999" }}>
+						<Modal show={this.state.showChat} onHide={this.closeChat} style={{ zIndex: "999999" }}>
 							<Modal.Header  className="bombat" closeButton>
 								<Modal.Title>EVAC ChatRoom</Modal.Title>
 							</Modal.Header>
@@ -673,19 +688,34 @@ class Video extends Component {
 								{/*<Button variant="contained" color="primary" onClick={this.sendMessage}>Send</Button>*/}
 							</Modal.Footer>
 						</Modal>
+						
+						<Modal show={this.state.showMeet} onHide={this.closeMeet} style={{ zIndex: "999999" }}>
+							<Modal.Header  className="bombat" closeButton>
+								<Modal.Title>EVAC Meeting Details</Modal.Title>
+							</Modal.Header>
+							<Modal.Body style={{ overflow: "auto", overflowY: "auto", height: "220px" }} >
+							<div style={{ paddingTop: "20px" }}>
+								<span style={{color: "#000000"}}>{window.location.href}</span>
+								<Button style={{
+										backgroundImage: 'linear-gradient(to right, #00eb81, #00b19c)',
+										color: "#ffffff",
+										marginLeft: "20px",
+										// marginTop: "10px",
+										width: "120px",
+										fontSize: "10px"
+									}} onClick={this.copyUrl}>Copy Invite Link</Button>
+								</div>
+								<div style={{paddingTop:'20px'}}>
+									Meeting Code : {window.location.href.split("/")[4]}
+								</div>
+								<div style={{textAlign: 'center',marginTop:'10px'}}>
+									<WhatsappBtn margin='5px'/>
+								</div>
+							</Modal.Body>
+						</Modal>
 
 						<div className="container">
-							<div style={{ paddingTop: "20px" }}>
-								<span style={{color: "whitesmoke"}}>{window.location.href}</span>
-								<Button style={{
-									backgroundImage: 'linear-gradient(to right, #00eb81, #00b19c)',
-									color: "whitesmoke",
-									marginLeft: "20px",
-									marginTop: "10px",
-									width: "120px",
-									fontSize: "10px"
-								}} onClick={this.copyUrl}>Copy invite link</Button>
-							</div>
+							
 
 							<Row id="main" className="flex-container" style={{ margin: 0, padding: 0 }}>
 								<video id="my-video" ref={this.localVideoref} autoPlay muted style={{
