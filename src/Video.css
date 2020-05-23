@@ -54,3 +54,13 @@ body {
     color: '#ffffff';
     font-size: 10px;
    }
+
+   .ccdisplay{
+    position: fixed;
+    z-index:1;
+    left: 33.3%;
+    bottom: 10%;
+    background-color: #000000;
+    color: white;
+    text-align: center;
+   }

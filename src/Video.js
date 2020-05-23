@@ -2,39 +2,32 @@ import React, { Component } from 'react';
 import io from 'socket.io-client';
 import faker from "faker";
 
-import IconButton from '@material-ui/core/IconButton';
 import Badge from '@material-ui/core/Badge';
 import { Input, Button } from '@material-ui/core';
-import VideocamIcon from '@material-ui/icons/Videocam';
-import VideocamOffIcon from '@material-ui/icons/VideocamOff';
-import MicIcon from '@material-ui/icons/Mic';
-import MicOffIcon from '@material-ui/icons/MicOff';
-import ScreenShareIcon from '@material-ui/icons/ScreenShare';
-import StopScreenShareIcon from '@material-ui/icons/StopScreenShare';
-import CallEndIcon from '@material-ui/icons/CallEnd';
-import ChatIcon from '@material-ui/icons/Chat';
 
 import LoadingOverlay from 'react-loading-overlay';
 
 import { Modal as Cmod, message } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 
-import {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, Msg, SendMsg, EndCall} from './scripts/buttons';
+import {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, Msg, SendMsg, EndCall, CCbtn} from './scripts/buttons';
 
 import 'antd/dist/antd.css';
 
 import cookie from 'react-cookies';
 import verifytok from './scripts/verifyuser';
+import Speech from './scripts/CC';
 
 import { Row } from 'reactstrap';
 import Modal from 'react-bootstrap/Modal'
 import 'bootstrap/dist/css/bootstrap.css';
 import "./Video.css";
 
+
 const { confirm } = Cmod;
 var VideoStreamMerger = require('video-stream-merger')
 
-const server_url = 'https://evac-signal.herokuapp.com' //'http://localhost:4001' 
+const server_url = 'http://localhost:4001'  //'https://evac-signal.herokuapp.com' //'http://localhost:4001' 
 
 var joinbling = require('./sounds/join_call_mp3.mp3')
 var notifybling = require('./sounds/notify_mp3.mp3')
@@ -79,12 +72,13 @@ class Video extends Component {
 			newmessages: 0,
 			username: faker.internet.userName(),
 			fullName: "",
-			waiting:false
+			waiting:false,
+			captionsison:false, 
+			captiondata:false
 		}
 		connections = {}
 
 		this.addMessage = this.addMessage.bind(this)
-
 		this.getPermissions()
 	}
 	componentDidMount(){
@@ -100,6 +94,9 @@ class Video extends Component {
 				// this.getPermissions()
 				this.getMedia()
 				this.connectToSocketServer()
+				this.captions = new Speech({
+					"emitcc":this.ccsender
+				})
 			})
 		}
 		document.getElementById('my-video').addEventListener("ended", () => {
@@ -474,6 +471,8 @@ class Video extends Component {
 
 			socket.on('chat-message', this.addMessage)
 
+			socket.on('closed-captions', this.recievecc)
+
 			socket.on('participation-request', function(path,id,extra){
 				confirm({
 					title: `Add ${extra.name} to the meeting ?`,
@@ -540,23 +539,26 @@ class Video extends Component {
 		} catch (e) {
 
 		}
-
 		window.location.href = "/"
 	}
-
-
-	openChat = () => {
+	ccsender = (data) => {
+		socket.emit('closed-captions',{speaker:this.state.fullName,msg:data})
+	}
+	recievecc = (data) => {
 		this.setState({
-			showModal: true,
-			newmessages: 0,
+			captionsison:this.state.captionsison,
+			captiondata:this.state.captionsison ? data : false
 		})
 	}
-
-	closeChat = () => {
+	handlecc = () => {
 		this.setState({
-			showModal: false,
+			captionsison:!this.state.captionsison
 		})
+		this.captions.toggleListen()
 	}
+	openChat = () => {this.setState({showModal: true,newmessages: 0,})}
+
+	closeChat = () => {this.setState({showModal: false,})}
 
 	handleMessage = (e) => {
 		this.setState({
@@ -627,6 +629,17 @@ class Video extends Component {
 			>
 				<div>
 					<div>
+						{this.state.captiondata && this.state.captionsison &&
+							<div className="ccdisplay">
+								{this.state.captiondata.speaker} : {this.state.captiondata.msg}
+							</div>
+						}
+						{/*this.state.captions.ison ? <div className="ccdisplay">{this.state.captions.data ? this.state.captions.data.speaker :null}</div>:null*/}
+						{/*this.state.captions.ison && this.state.captions.data &&
+							<div className="ccdisplay">
+								{this.state.captions.data.speaker} : {this.state.captions.data.msg}
+							</div>
+						*/}
 						<div className="btn-down bombat" style={{ height:'70px',maxHeight:'70px', paddingTop:'3px', textAlign: "center" }}>
 
 							{this.state.video ? <UnmutedVideo margin='5px' onClick={this.handleVideo}/>:<MutedVideo margin='5px' onClick={this.handleVideo}/>}
@@ -640,6 +653,7 @@ class Video extends Component {
 							<Badge color="secondary" badgeContent={this.state.newmessages} max={999} anchorOrigin={{vertical: 'top',horizontal: 'right'}} onClick={this.openChat}>
 								<Msg margin='5px' onClick={this.openChat}/>
 							</Badge>
+							<CCbtn margin='5px'onClick={this.handlecc}/>
 						</div>
 
 						<Modal show={this.state.showModal} onHide={this.closeChat} style={{ zIndex: "999999" }}>
@@ -684,6 +698,7 @@ class Video extends Component {
 								}}></video>
 							</Row>
 						</div>
+						
 					</div>
 				</div>
 			</LoadingOverlay>
