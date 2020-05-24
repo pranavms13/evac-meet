@@ -57,10 +57,26 @@ body {
 
    .ccdisplay{
     position: fixed;
-    z-index:1;
-    left: 33.3%;
+    z-index:5;
+    align-items: center;
+    font-size: large;
+    overflow: hidden;
+    width:80%;
+    left: 10%;
+    /* max-width: 50%; */
+    max-height: 10%;
     bottom: 10%;
     background-color: #000000;
+    opacity: 0.8;
     color: white;
     text-align: center;
    }
+
+.logoheader{
+    position: fixed;
+    z-index: 1;
+    left:0;
+    top: 0;
+    width:10%;
+    height:10%;
+}

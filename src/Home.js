@@ -5,14 +5,19 @@ import cookie from 'react-cookies';
 import verifytok from './scripts/verifyuser';
 import "./Home.css"
 
+var appdetails = require('./details.json');
+var changelog = require('./changelog.json');
 var randomize = require('randomatic');
 
 class Home extends Component {
   	constructor (props) {
 		super(props)
 		this.state = {
-			url: ''
+			url: '',
 		}
+	}
+	componentWillMount(){
+		// this.changelog = fs.readFileSync('./CHANGELOG.MD')
 	}
 	componentDidMount(){
 		if((!cookie.load('EVAC')||(!verifytok(cookie.load('EVAC'))))){
@@ -45,7 +50,7 @@ class Home extends Component {
 		return (
 			<div className="container2">
 				<div>
-					<h1 style={{ fontSize: "45px" }}>EVAC Video Meeting</h1>
+					<h1 style={{ fontSize: "45px" }}>EVAC Video Meeting <sub><small>v{appdetails.version}</small></sub></h1>
 					<p style={{ fontWeight: "200" }}>EVAC is a WebRTC JavaScript based peer-to-peer application with features like screen sharing, audio/video conferencing, file sharing, media streaming etc.</p>
 				</div>
 
@@ -53,7 +58,7 @@ class Home extends Component {
 					<Row>
 						<Col xs={12} md={6}>
 							<div style={{
-								background: "whitesmoke", width: "30%", height: "auto", padding: "20px", minWidth: "400px",
+								background: "whitesmoke", width: "30%", padding: "20px", minWidth: "400px",
 								textAlign: "center", margin: "auto", marginTop: "100px"
 							}}>
 								<p style={{ margin: 0, fontWeight: "bold", width:'100%',textAlign:'center' }}>Create New meeting</p>
@@ -65,10 +70,20 @@ class Home extends Component {
 						</Col>
 						<Col xs={12} md={6}>
 							<div className="bombat" style={{
-								 width: "30%", height: "auto", padding: "20px", minWidth: "400px",
-								textAlign: "center", margin: "auto", marginTop: "100px"
+								 width: "50%", height: "auto", padding: "20px", minWidth: "500px",
+								 margin: "auto", marginTop: "100px", maxHeight:"40%", overflow:"scroll"
 							}}>
-							<p className="lead"></p>
+								{Object.keys(changelog).map((version) => {
+									return (
+										<div>
+											<h4 style={{color:'#ffffff'}}>{version}</h4>
+											<ul>{changelog[version].map((change) => {
+												return <li><small>{change}</small></li>
+											})}</ul>
+											<hr/>
+										</div>
+									)
+								})}
 							</div>
 						</Col>
 					</Row>

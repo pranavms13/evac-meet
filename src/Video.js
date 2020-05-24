@@ -33,6 +33,7 @@ const server_url = 'https://evac-signal.herokuapp.com' //'http://localhost:4001'
 var joinbling = require('./sounds/join_call_mp3.mp3')
 var notifybling = require('./sounds/notify_mp3.mp3')
 var leavebling = require('./sounds/leave_call_mp3.mp3')
+var logo = require('./images/logo.png')
 
 var connections = {}
 const peerConnectionConfig = {
@@ -49,12 +50,7 @@ var socketId = null
 
 var elms = 0
 
-const useStyles = makeStyles(theme => ({
-	typography: {
-		padding: theme.spacing(2)
-	}
-}));
-
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
 class Video extends Component {
 	constructor(props) {
@@ -335,14 +331,16 @@ class Video extends Component {
 			socketId = socket.id
 
 			socket.on('waiting', () => {this.setState({waiting:true})})
-			socket.on('join-success', () => {
+			socket.on('join-success', async () => {
 				var audio = new Audio(joinbling);
 				audio.play()
+				await delay(1000)
 				this.setState({waiting:false})
 			})
 
-			socket.on('user-joined', (id, clients) => {
+			socket.on('user-joined', async (id, clients) => {
 				var audio = new Audio(joinbling);
+				await delay(500)
 				audio.play();
 				console.log("User Joined")
 				clients.forEach(client => {
@@ -373,18 +371,30 @@ class Video extends Component {
 								var minHeight = '40%';
 								var height = String(100 / elms) + '%';
 								var width;
-								if(elms <= 1){
-									width = '75%'
-									height = '100%'
-								}else if(elms <= 2){
-									width = '45%';
-									height = '75%';
-								}else if(elms <= 4){
-									width = '35%';
-									height = '50%';
-								}else{
-									width=String(100 / elms) + '%'
+								if(elms === 1){
+									width = "45%"
+									height = "30%"
+								}else if (elms === 2) {
+									width = "45%"
+									height = "100%"
+								} else if (elms === 3 || elms === 4) {
+									width = "35%"
+									height = "50%"
+								} else {
+									width = String(100 / elms) + "%"
 								}
+								// if(elms <= 1){
+								// 	width = '75%'
+								// 	height = '50%'
+								// }else if(elms <= 2){
+								// 	width = '45%';
+								// 	height = '75%';
+								// }else if(elms <= 4){
+								// 	width = '35%';
+								// 	height = '50%';
+								// }else{
+								//	width=String(100 / elms) + '%'
+								// }
 								//-------------------------------------------------------------------------
 
 								for(let a = 0;a< videos.length; ++a){
@@ -598,9 +608,8 @@ class Video extends Component {
 
 	sendMessage = () => {
 		if(this.state.message===""){
-			this.setState({showChat: false},
-				message.error("Cannot Send Empty Message",5)
-			)
+			message.error("Cannot Send Empty Message",3)
+			this.setState({showChat: false})
 		}else{
 			socket.emit('chat-message', {sender:this.state.fullName,msg:this.state.message})
 			this.setState({
@@ -611,7 +620,7 @@ class Video extends Component {
 
 	copyUrl = (e) => {
 		var text = window.location.href
-
+		this.setState({showMeet:false})
 		if (!navigator.clipboard) {
 			var textArea = document.createElement("textarea")
 			textArea.value = text
@@ -655,6 +664,9 @@ class Video extends Component {
 								{this.state.captions.data.speaker} : {this.state.captions.data.msg}
 							</div>
 						*/}
+						<div className="logoheader">
+							<image src={logo} style={{width:'100%',height:'100%'}}/>
+						</div>
 						<div className="btn-down bombat" style={{ height:'70px',maxHeight:'70px', paddingTop:'3px', textAlign: "center" }}>
 							<UpArrow margin='5px' onClick={this.openMeet}/>
 							{this.state.video ? <UnmutedVideo margin='5px' onClick={this.handleVideo}/>:<MutedVideo margin='5px' onClick={this.handleVideo}/>}
@@ -715,8 +727,6 @@ class Video extends Component {
 						</Modal>
 
 						<div className="container">
-							
-
 							<Row id="main" className="flex-container" style={{ margin: 0, padding: 0 }}>
 								<video id="my-video" ref={this.localVideoref} autoPlay muted style={{
 									borderRadius:'10px',
