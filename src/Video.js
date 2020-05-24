@@ -709,7 +709,7 @@ class Video extends Component {
 									Meeting Code : {window.location.href.split("/")[4]}
 								</div>
 								<div style={{textAlign: 'center',marginTop:'10px'}}>
-									<WhatsappBtn margin='5px'/>
+									<WhatsappBtn margin='5px' host={this.state.fullName} ml={window.location.href} mc={window.location.href.split("/")[4]}/>
 								</div>
 							</Modal.Body>
 						</Modal>
