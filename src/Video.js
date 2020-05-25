@@ -4,14 +4,14 @@ import faker from "faker";
 
 import Badge from '@material-ui/core/Badge';
 import { Input, Button } from '@material-ui/core';
-import { makeStyles } from "@material-ui/core/styles";
 
 import LoadingOverlay from 'react-loading-overlay';
 
 import { Modal as Cmod, message } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 
-import {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, Msg, SendMsg, EndCall, CCbtn, UpArrow, WhatsappBtn} from './scripts/buttons';
+import {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, 
+	Msg, SendMsg, EndCall, CCbtn, UpArrow, WhatsappBtn, MailBtn} from './scripts/buttons';
 
 import 'antd/dist/antd.css';
 
@@ -549,6 +549,7 @@ class Video extends Component {
 		}, () => {
 			this.getMedia()
 		})
+		this.state.screen ? message.error('Screen Sharing is ON') : message.success('Screen Sharing is OFF')
 	}
 
 	handleEndCall = () => {
@@ -722,6 +723,7 @@ class Video extends Component {
 								</div>
 								<div style={{textAlign: 'center',marginTop:'10px'}}>
 									<WhatsappBtn margin='5px' host={this.state.fullName} ml={window.location.href} mc={window.location.href.split("/")[4]}/>
+									<MailBtn margin='5px' host={this.state.fullName} ml={window.location.href} mc={window.location.href.split("/")[4]}/>
 								</div>
 							</Modal.Body>
 						</Modal>

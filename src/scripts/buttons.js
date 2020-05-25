@@ -149,4 +149,27 @@ class WhatsappBtn extends Component{
     }
 }
 
-export {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, Msg, SendMsg, EndCall, CCbtn, UpArrow, WhatsappBtn};
+class MailBtn extends Component{
+    constructor(props){
+        super(props);
+        this.handleMailShare = this.handleMailShare.bind(this);
+    }
+    handleMailShare(){
+        var text = `
+        ${this.props.host}%20is%20inviting%20you%20to%20a%20meeting%20on%20%0Ahttps%3A%2F%2Fevac.herokuapp.com%0A%0AMeeting%20Code%20%3A%20${this.props.mc}%20%0A%0ALink%20%3A%20${this.props.ml}%0AClick%20on%20the%20Link%20to%20Join%20directly.
+        `
+        window.open(`mailto:?subject=Meeting%20invite%20from%20${this.props.host}&body=${text}`,"_blank")
+    }
+    render(){
+        return(
+            <button className='controlbtns' style={{backgroundImage: 'linear-gradient(to right, #00eb81, #00b19c)', borderRadius:'50%', borderStyle:'solid', borderColor:'#ffffff', borderWidth:'1px' ,margin:this.props.margin}} onClick={this.handleMailShare}>
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="#ffffff" d="M24 4.5v15c0 .85-.65 1.5-1.5 1.5H21V7.387l-9 6.463-9-6.463V21H1.5C.649 21 0 20.35 0 19.5v-15c0-.425.162-.8.431-1.068C.7 3.16 1.076 3 1.5 3H2l10 7.25L22 3h.5c.425 0 .8.162 1.069.432.27.268.431.643.431 1.068z"/>
+                </svg>
+            </button>
+        )
+    }
+}
+
+export {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, 
+    Msg, SendMsg, EndCall, CCbtn, UpArrow, WhatsappBtn, MailBtn};
