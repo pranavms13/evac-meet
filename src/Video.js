@@ -168,50 +168,93 @@ class Video extends Component {
 				track.stop();
 			  });
 		}catch(e){console.log(e)}
-		var s = new MediaStream();
+		// var s = new MediaStream();
 
 		console.log(this.state.video, this.state.audio, this.state.screen);
 		if(!this.state.video && !this.state.audio && !this.state.screen){
 			this.getMediaSuccess(this.generateNameStream(this.state.fullName))
+				// .then(this.getMediaSuccess)
+				// .then((stream) => {})
+				// .catch((e) => console.log(e))
+			// this.getMediaSuccess(this.generateNameStream(this.state.fullName))
 		}else if(!this.state.video && !this.state.audio && this.state.screen && this.state.screenAvailable){
-			var screen = await navigator.mediaDevices.getDisplayMedia({ video:this.state.screen, audio: this.state.screen});
-			this.getMediaSuccess(screen)
+			// var screen = await 
+			navigator.mediaDevices.getDisplayMedia({ video:this.state.screen, audio: this.state.screen})
+				.then(this.getMediaSuccess)
+				.then((stream) => {})
+				.catch((e) => {
+					console.log(e)
+					this.setState({screen:false});
+					this.getMedia();
+				})
+			// this.getMediaSuccess(screen)
 		}else if(!this.state.video && this.state.audio && !this.state.screen && this.audioAvailable){
-			var mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true }});
-			await mic.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
-			this.getMediaSuccess(mic)
+			// var mic = await 
+			navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true }})
+				.then((stream) => {
+					stream.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
+				})
+				.then(this.getMediaSuccess)
+				.catch((e) => console.log(e))
+			// await mic.addTrack(this.generateNameStream(this.state.fullName).getVideoTracks()[0])
+			// this.getMediaSuccess(mic)
 		}else if(!this.state.video && this.state.audio && this.state.screen && this.audioAvailable && this.state.screenAvailable){
-			var screen = await navigator.mediaDevices.getDisplayMedia({ video:this.state.screen, audio: this.state.screen});
-			var mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true }});
-			if(screen.getAudioTracks().length>0){
-				screen.removeTrack(screen.getAudioTracks()[0])
-			}
-			screen.addTrack(mic.getAudioTracks()[0])
-			this.getMediaSuccess(screen)
+			// var screen = await 
+			navigator.mediaDevices.getDisplayMedia({ video:this.state.screen, audio: this.state.screen})
+				.then((stream) => {
+					navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true }})
+					.then((micstream) => {
+						stream.addTrack(micstream.getAudioTracks[0])
+					})
+				})
+				.then(this.getMediaSuccess)
+				.catch((e) => console.log(e))
+			// var mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true }});
+			// if(screen.getAudioTracks().length>0){
+			// 	screen.removeTrack(screen.getAudioTracks()[0])
+			// }
+			// screen.addTrack(mic.getAudioTracks()[0])
+			// this.getMediaSuccess(screen)
 		}else if(this.state.video && !this.state.audio && !this.state.screen && this.videoAvailable){
-			var cam = await navigator.mediaDevices.getUserMedia({ video: true });
-			this.getMediaSuccess(cam)
+			// var cam = await 
+			navigator.mediaDevices.getUserMedia({ video: true })
+				.then(this.getMediaSuccess)
+				.then((stream) => {})
+				.catch((e) => console.log(e))
+			// this.getMediaSuccess(cam)
 		}else if(this.state.video && this.state.screen && this.videoAvailable && this.state.screenAvailable){
-			var cam = await navigator.mediaDevices.getUserMedia({ video: true , audio: true});
-			var screen = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true});
+			// var cam = await 
 			var merger = new VideoStreamMerger();
-			merger.addStream(screen, {
-				x:0,y:0,
-				width:merger.width,
-				height:merger.height,
-				mute:true // Neglet audio from screen
-			})
-			merger.addStream(cam, {
-				x:merger.width - 125, y:merger.height - 125,
-				width:100,height:100,
-				mute : (this.state.audio && this.audioAvailable)
-			})
-			merger.start()
-			this.getMediaSuccess(merger.result)
+			navigator.mediaDevices.getUserMedia({ video: true , audio: true})
+				.then((cam) => {
+					navigator.mediaDevices.getDisplayMedia({ video: true, audio: true})
+					.then((disp) => {
+						merger.addStream(disp, {
+							x:0,y:0,
+							width:merger.width,
+							height:merger.height,
+							mute:true // Neglet audio from screen
+						})
+						merger.addStream(cam, {
+							x:merger.width - 125, y:merger.height - 125,
+							width:100,height:100,
+							mute : (this.state.audio && this.audioAvailable)
+						})
+						merger.start()
+						this.getMediaSuccess(merger.result)
+					})
+				})	
+				// .then(this.getMediaSuccess)
+				.catch((e) => console.log(e))
+			// var screen = await 
 
 		}else if(this.state.video && this.state.audio && !this.state.screen && this.videoAvailable && this.audioAvailable){
-			var cam = await navigator.mediaDevices.getUserMedia({ video: true , audio: { echoCancellation:true }});
-			this.getMediaSuccess(cam)
+			// var cam = await 
+			navigator.mediaDevices.getUserMedia({ video: true , audio: { echoCancellation:true }})
+				.then((stream) => {})
+				.then(this.getMediaSuccess)
+				.catch((e) => console.log(e))
+			// this.getMediaSuccess(cam)
 		}
 
 		//-------------------------------------------------------------------------------------------------------------------------------
@@ -296,6 +339,16 @@ class Video extends Component {
 					})
 					.catch(e => console.log(e));
 			});
+		}
+
+		stream.getVideoTracks()[0].onended = async () => {
+			if(this.state.video){
+				this.setState({video:false});
+			}
+			if(this.state.screen){
+				this.setState({screen:false});
+			}
+			this.getMedia();
 		}
 	}
 
@@ -548,7 +601,7 @@ class Video extends Component {
 		}, () => {
 			this.getMedia()
 		})
-		this.state.screen ? message.error('Screen Sharing is ON') : message.success('Screen Sharing is OFF')
+		this.state.screen ? message.error('Screen Sharing is OFF') : message.success('Screen Sharing is ON')
 	}
 
 	handleEndCall = () => {
