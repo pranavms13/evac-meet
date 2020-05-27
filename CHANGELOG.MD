@@ -1,3 +1,7 @@
+## v0.2.3
+* Meeting Recorder
+* Fixed Video Stream End Bug
+
 ## v0.2.2
 * Closed Captions ( *Experimental* )
 * Complete UI Redesign.

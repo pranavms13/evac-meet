@@ -11,7 +11,7 @@ import { Modal as Cmod, message } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 
 import {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, 
-	Msg, SendMsg, EndCall, CCbtn, UpArrow, WhatsappBtn, MailBtn} from './scripts/buttons';
+	Msg, SendMsg, EndCall, CCbtn, UpArrow, WhatsappBtn, MailBtn, RecBtn} from './scripts/buttons';
 
 import 'antd/dist/antd.css';
 
@@ -24,6 +24,7 @@ import Modal from 'react-bootstrap/Modal'
 import 'bootstrap/dist/css/bootstrap.css';
 import "./Video.css";
 
+import MeetRec from './scripts/meetrecorder';
 
 const { confirm } = Cmod;
 var VideoStreamMerger = require('video-stream-merger')
@@ -101,6 +102,7 @@ class Video extends Component {
 				this.captions = new Speech({
 					"emitcc":this.ccsender
 				})
+				this.recorder = new MeetRec();
 			})
 		}
 		document.getElementById('my-video').addEventListener("ended", () => {
@@ -315,11 +317,11 @@ class Video extends Component {
 
 
 	getMediaSuccess = async (stream) => {
-		// try {
-		// 	window.localStream.getTracks().forEach(track => track.stop())
-		// } catch (e) {
-		// 	console.log(e)
-		// }
+		try {
+			window.localStream.getTracks().forEach(track => track.stop())
+		} catch (e) {
+			console.log(e)
+		}
 		window.localStream = stream
 		this.localVideoref.current.srcObject = stream
 
@@ -638,6 +640,10 @@ class Video extends Component {
 	closeChat = () => {this.setState({showChat: false,})}
 	closeMeet = () => {this.setState({showMeet: false,})}
 
+	handleRec = () => {
+		this.recorder.handlerecord();
+	}
+
 	handleMessage = (e) => {
 		this.setState({
 			message: e.target.value,
@@ -734,6 +740,7 @@ class Video extends Component {
 								<Msg margin='5px' onClick={this.openChat}/>
 							</Badge>
 							<CCbtn margin='5px'onClick={this.handlecc}/>
+							{this.state.screenAvailable && <RecBtn margin='5px' onClick={this.handleRec}/>}
 						</div>
 
 						<Modal show={this.state.showChat} onHide={this.closeChat} style={{ zIndex: "999999" }}>

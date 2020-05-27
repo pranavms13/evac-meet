@@ -1,6 +1,6 @@
 {
   "name": "evac-meetings",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "author": "Pranav M S",
   "description": "EVAC - Encrypted Video Audio Conferencing is a WebRTC based Webapp for Video Confrencing",
@@ -14,6 +14,7 @@
     "bootstrap": "^4.4.1",
     "cors": "^2.8.5",
     "faker": "^4.1.0",
+    "file-saver": "^2.0.2",
     "randomatic": "^3.1.1",
     "react": "^16.13.1",
     "react-bootstrap": "^1.0.0",
