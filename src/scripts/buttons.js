@@ -171,5 +171,17 @@ class MailBtn extends Component{
     }
 }
 
+class RecBtn extends Component{
+    render(){
+        return(
+            <button className='controlbtns' style={{background: 'transparent', borderRadius:'50%', borderStyle:'solid', borderColor:'#ffffff', borderWidth:'1px' ,margin:this.props.margin}} onClick={this.props.onClick}>
+                <svg viewBox="0 0 64 64" width="24" height="24">
+                    <circle xmlns="http://www.w3.org/2000/svg" data-name="layer1" cx="32" cy="32" r="26" fill="#f5483f" stroke="#ffffff" stroke-miterlimit="10" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+                </svg>
+            </button>
+        )
+    }
+}
+// <circle xmlns="http://www.w3.org/2000/svg" data-name="layer1" cx="32" cy="32" r="26" fill="none" stroke="#202020" stroke-miterlimit="10" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
 export {MutedMic, UnmutedMic, MutedVideo, UnmutedVideo, Screen, Unscreen, 
-    Msg, SendMsg, EndCall, CCbtn, UpArrow, WhatsappBtn, MailBtn};
+    Msg, SendMsg, EndCall, CCbtn, UpArrow, WhatsappBtn, MailBtn, RecBtn};
