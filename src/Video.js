@@ -40,8 +40,8 @@ var connections = {}
 const peerConnectionConfig = {
 	'iceServers': [
 		{ 'urls': 'stun:stun.l.google.com:19302' },
-		{ 'urls' : 'turn:turn.pranavms.ml:3480' ,'username':'pranavms', 'credential':'pranavms@13'},
-		{ 'urls' : 'turn:turn.pranavms.ml:3481' ,'username':'pranavms', 'credential':'pranavms@13'},
+		{ 'urls' : 'turn:turn.pranavms.ml:3478' ,'username':'pranavms', 'credential':'pranavms@13'},
+		{ 'urls' : 'turn:turn.pranavms.ml:5349' ,'username':'pranavms', 'credential':'pranavms@13'},
 		// { 'urls': 'stun:stun.services.mozilla.com' },	
 	]
 }
