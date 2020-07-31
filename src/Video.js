@@ -253,7 +253,7 @@ class Video extends Component {
 		}else if(this.state.video && this.state.audio && !this.state.screen && this.videoAvailable && this.audioAvailable){
 			// var cam = await 
 			navigator.mediaDevices.getUserMedia({ video: true , audio:true})
-				.then((stream) => {})
+				// .then((stream) => {})
 				.then(this.getMediaSuccess)
 				.catch((e) => console.log(e))
 			// this.getMediaSuccess(cam)
